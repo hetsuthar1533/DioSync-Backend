@@ -9,11 +9,11 @@ app.use(cors({
 }))
 
 app.use(express.urlencoded({ extended: true }));
-const router = require("./routes/ItemRoute")
+const Itemrouter = require("./routes/ItemRoute")
 
 
 app.use(express.urlencoded({ extended: true }));
-app.use("/",router)
+app.use("/",Itemrouter)
 const server=app.listen(1234,()=>{
     console.log("server is running on port 1234")
 })
