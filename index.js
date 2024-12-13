@@ -1,20 +1,22 @@
-const express = require('express')
-const app = express()
-const port = 1234
-const db = require('../DioSync-Backend/db'); // Import the database connection
-const cors = require('cors'); 
 
+const db=require("./db")
+const express=require("express")
+const app=express()
 app.use(express.json())
+const cors=require("cors")
 app.use(cors({
-  origin: 'http://localhost:3000', // Replace with your frontend's URL
-  methods: ['GET', 'POST'], // Specify allowed methods
-  allowedHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
-}));
-app.use('/accounts', require("./routes/auth"))
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
+    origin: "http://localhost:3000",
+    credentials:true
+}))
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
+app.use(express.urlencoded({ extended: true }));
+const router = require("./routes/ItemRoute")
+
+
+app.use(express.urlencoded({ extended: true }));
+app.use("/",router)
+app.use('/accounts', require("./routes/auth"))
+
+const server=app.listen(1234,()=>{
+    console.log("server is running on port 1234")
 })
