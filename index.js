@@ -1,3 +1,4 @@
+
 const db=require("./db")
 const express=require("express")
 const app=express()
@@ -14,6 +15,8 @@ const router = require("./routes/ItemRoute")
 
 app.use(express.urlencoded({ extended: true }));
 app.use("/",router)
+app.use('/accounts', require("./routes/auth"))
+
 const server=app.listen(1234,()=>{
     console.log("server is running on port 1234")
 })
