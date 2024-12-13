@@ -16,19 +16,20 @@ const db=require("../db");
 }
 const AddContact = async (req, res) => {
     try {
-         const {ItemName,BrandName,Category,Subcategory,unitSize,status} = req.body;
+         const {username,email,phone_number,reply} = req.body;
 
 console.log(req.body);
 
             await db.promise().query(
-                "INSERT INTO item ( ItemName,BrandName,Category,Subcategory,unitSize,status) VALUES (?, ?, ?, ?,?,?)",
-                [ ItemName,BrandName,Category,Subcategory,unitSize,status ]
+                "INSERT INTO contact ( username,email,phone_number,reply) VALUES (?, ?, ?,?)",
+                [ username,email,phone_number,reply ]
             );
 
             res.status(200).json({
-                message: "order placed successfully",
+                message: "contacted successfully",
                 data: {
-                    ItemName,BrandName,Category,Subcategory,unitSize                }
+username,email,phone_number,reply
+ }
             });
         }
      catch (err) {
@@ -39,37 +40,37 @@ console.log(req.body);
 
 const getAllContact = async (req, res) => {
     try {
-        const [item] = await db.promise().query("SELECT * FROM item");
+        const [contact] = await db.promise().query("SELECT * FROM contact");
 
        
 
         res.status(200).json({
             success: true,
-            message: "item fetched successfully",
-            data: item,
+            message: "contact fetched successfully",
+            data: contact,
         });
     } catch (error) {
-        console.error("Failed to fetch item", error);
+        console.error("Failed to fetch contact", error);
         res.status(500).json({
             success: false,
-            message: "Failed to fetch item",
+            message: "Failed to fetch contact",
         });
     }
 };
 const deleteContact=async(req,res)=>{
     try{
-        console.log("hi i am delete item");
+        console.log("hi i am delete contact");
         const id=req.params;
         console.log(id);
-        console.log("hi i am delete item");
-        await db.promise().query("delete from item where itemId=?",[id.id])
+        console.log("hi i am delete contact");
+        await db.promise().query("delete from contact where contactId=?",[id.id])
         
         res.status(200).send("delete success")
     }
     catch(error){
         res.status(500).json({
             success: false,
-            message: "Failed to fetch item",
+            message: "Failed to fetch contact",
         });
     }
     
@@ -78,49 +79,21 @@ const deleteContact=async(req,res)=>{
 }
 const editContact=async(req,res)=>{
     try{
-        console.log("hi i am edit item");
+        console.log("hi i am edit contact");
         console.log(req.body);
         
-        const {ItemName,BrandName,Category,Subcategory,unitSize,status} = req.body;
+        const reply = req.body;
         const id=req.params.id;
         console.log(id);
-        
-        if(ItemName)
-{         await db.promise().query("update item set ItemName=? where itemId=?  ",[ItemName,id])
-console.log("updated");
-
-}
-if(BrandName)
-    console.log(BrandName);
-    
-    {         await db.promise().query("update item set BrandName=? where itemId=?  ",[BrandName,id])
-    console.log("updated");
-    
-
-    }
-    if(Category)
-        {         await db.promise().query("update item set Category=? where itemId=?  ",[Category,id])
-        console.log("updated");
-        
-        }
-        if(Subcategory)
+        if(reply)
         {
-            await db.promise().query("update item set Subcategory=? where itemId=?  ",[Subcategory,id])
-            console.log("updated");
+            await db.promise().query("update contact set reply=? where contactId=?  ",[reply,id])
+            console.log("reply updated");
 
         }
-        if(unitSize)
-        {
-            await db.promise().query("update item set unitSize=? where itemId=?  ",[unitSize,id])
-            console.log("updated");
-
-        }
-        if(status)
-            {
-                await db.promise().query("update item set status=? where itemId=?  ",[status,id])
-                console.log("updated status");
-    
-            }
+     
+  
+        
   
         res.status(200).send("Updated successfully")
 
