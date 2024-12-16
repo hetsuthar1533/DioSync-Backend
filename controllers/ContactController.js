@@ -28,7 +28,7 @@ console.log(req.body);
             res.status(200).json({
                 message: "order placed successfully",
                 data: {
-                    ItemName,BrandName,Category,Subcategory,unitSize                }
+                    ItemName,BrandName,Category,Subcategory,unitSize}
             });
         }
      catch (err) {
