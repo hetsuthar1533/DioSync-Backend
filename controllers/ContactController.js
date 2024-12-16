@@ -19,10 +19,11 @@ const AddContact = async (req, res) => {
          const {username,email,phone_number,reply} = req.body;
 
 console.log(req.body);
+        const date1=new Date()
 
             await db.promise().query(
-                "INSERT INTO contact ( username,email,phone_number,reply) VALUES (?, ?, ?,?)",
-                [ username,email,phone_number,reply ]
+                "INSERT INTO contact ( username,email,phone_number,reply,inquiry_date) VALUES (?, ?, ?,?,?)",
+                [ username,email,phone_number,reply,date1]
             );
 
             res.status(200).json({
@@ -57,6 +58,23 @@ const getAllContact = async (req, res) => {
         });
     }
 };
+const getContactByDate=async(req,res)=>{   try {
+    const [contact] = await db.promise().query("SELECT count(*) as contact_count,inquiry_date FROM contact group by inquiry_date");
+
+   
+
+    res.status(200).json({
+        success: true,
+        message: "contact fetched successfully",
+        data: contact,
+    });
+} catch (error) {
+    console.error("Failed to fetch contact", error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch contact",
+    });
+}}
 const deleteContact=async(req,res)=>{
     try{
         console.log("hi i am delete contact");
@@ -113,6 +131,7 @@ module.exports = {
     getAllContact,
     deleteContact,
     editContact,
+    getContactByDate,
     ContactController
   };
   

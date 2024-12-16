@@ -35,7 +35,7 @@ const getCountryByCityOrState = async (req, res) => {
         const { cityOrState } = req.params;
 
         const [countries] = await db.promise().query(
-            "SELECT DISTINCT country FROM locations WHERE city = ? OR state = ?",
+            "SELECT DISTINCT * FROM locations WHERE city = ? OR state = ?",
             [cityOrState, cityOrState]
         );
 

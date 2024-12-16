@@ -16,5 +16,6 @@ router.get("/fetchcontact",ContactController.getAllContact)
 router.post("/addcontact",ContactController.AddContact)
 router.delete("/deletecontact/:id",ContactController.deleteContact)
 router.put("/editcontact/:id",ContactController.editContact)
+router.get("/contactbydate",ContactController.getContactByDate)
 
 module.exports=router;
