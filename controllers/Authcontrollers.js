@@ -9,7 +9,7 @@ const SECRET_KEY = 'your_jwt_secret';
 const REFRESH_SECRET_KEY = 'i_am_refresh';
 app.use(cors({
     origin: 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST'],
     Headers: ['Content-Type', 'Authorization'],
 }));
 // Token generation function
