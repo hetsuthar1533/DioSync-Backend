@@ -11,11 +11,13 @@ app.use(cors({
 
 app.use(express.urlencoded({ extended: true }));
 const Itemrouter = require("./routes/ItemRoute")
-
-
+const ContactRouter=require("./routes/ContactRoute")
+const DestinationRouter=require("./routes/DestinationRoute")
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/", Itemrouter)
+app.use("/",Itemrouter)
+app.use("/",ContactRouter)
+app.use("/",DestinationRouter)
 
 
 app.use('/accounts', require("./routes/auth"))
