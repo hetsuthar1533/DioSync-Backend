@@ -1,29 +1,23 @@
-// const express = require('express')
-// const router = express.Router()
-// const jwt = require('jsonwebtoken')
-// const bcrypt = require('bcrypt')
-// const jwtSecret = "MyNameisHetsuthar"
-
-// routes/auth.js
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const db = require('../db'); // Import the database connection
-const { Signup, Login,Logout,verifyToken,RefreshToken } = require('../controllers/Authcontrollers');
-// Signup route
- router.post('/signup', Signup); 
-// Login route
+const { Signup, Login, Logout, RefreshToken, verifyToken, sendForgotPasswordEmail, verifyOTP, addNewPassword, changePassword, resetPassword } = require('../controllers/Authcontrollers');
+
+// Existing routes
+router.post('/signup', Signup);
 router.post('/login', Login);
-// Logout 
 router.post('/logout', verifyToken, Logout);
-//
 router.post('/token/refresh', RefreshToken);
+
+// New routes for password management
+router.post('/forget-password/send-mail', sendForgotPasswordEmail);
+router.post('/forget-password/verify-code', verifyOTP);
+router.post('/forget-password/change-password', addNewPassword);
+router.post('/login/change-password', changePassword);
+router.post('/reset-password', resetPassword);
+
+
+
+
+
+
 module.exports = router;
-
-
-
-
-
-
-
