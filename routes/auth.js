@@ -8,11 +8,12 @@ router.post('/login', Login);
 router.post('/logout', verifyToken, Logout);
 router.post('/token/refresh', RefreshToken);
 
-// New routes for password management
+
+
 router.post('/forget-password/send-mail', sendForgotPasswordEmail);
 router.post('/forget-password/verify-code', verifyOTP);
 router.post('/forget-password/change-password', addNewPassword);
-router.post('/login/change-password', changePassword);
+// router.post('/login/change-password', changePassword);
 router.post('/reset-password', resetPassword);
 
 

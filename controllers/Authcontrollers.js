@@ -47,6 +47,7 @@ const Signup = async (req, res) => {
 const Login = async (req, res) => {
     const { email, password } = req.body;
     const sql = 'SELECT * FROM users WHERE email = ?';
+    console.log(email);
 
     db.query(sql, [email], (err, results) => {
         if (err) return res.status(500).json({ message: 'Database error', err });
@@ -87,9 +88,9 @@ const Logout = (req, res) => {
     console.log("hi this is logout");
 
     const authHeader = req.headers['authorization'];
-    console.log("hi this is logout",authHeader);
+    console.log("hi this is logout", authHeader);
 
-    
+
     const token = authHeader.split(' ')[1]; // Extract token from "Bearer <token>"
 
     blacklist.push(token);
@@ -130,7 +131,9 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-// Controller functions
+
+
+// SMTP configuration for nodemailer
 
 
 const sendForgotPasswordEmail = (req, res) => {
@@ -142,49 +145,112 @@ const sendForgotPasswordEmail = (req, res) => {
         if (results.length === 0) return res.status(400).json({ message: 'Email not found' });
 
         const user = results[0];
-        const otp = Math.floor(100000 + Math.random() * 900000); // Generate a 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate a 6-digit OTP
 
         const token = jwt.sign({ email, otp }, OTP_SECRET, { expiresIn: '15m' });
 
-        const mailOptions = {
-            from: 'hetsuthar1533@gmail.com',
-            to: email,
-            subject: 'Password Reset OTP',
-            text: `Your OTP is: ${otp}`,
-        };
+        // Store the token and OTP in the database
+        const updateSql = 'UPDATE users SET otp_token = ?, otp = ? WHERE email = ?';
 
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) return res.status(500).json({ message: 'Email sending failed', error });
-            res.status(200).json({ token, message: 'OTP sent to email' });
-        });
-    });
-};
-
-const verifyOTP = (req, res) => {
-    const { token, otp } = req.body;
-    jwt.verify(token, OTP_SECRET, (err, decoded) => {
-        if (err) return res.status(400).json({ message: 'Invalid or expired OTP' });
-
-        if (decoded.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
-
-        res.status(200).json({ message: 'OTP verified', email: decoded.email });
-    });
-};
-
-const addNewPassword = (req, res) => {
-    const { email, newPassword } = req.body;
-    const sql = 'UPDATE users SET password = ? WHERE email = ?';
-
-    bcrypt.hash(newPassword, 10, (err, hash) => {
-        if (err) return res.status(500).json({ message: 'Error hashing password', err });
-
-        db.query(sql, [hash, email], (err, results) => {
+        db.query(updateSql, [token, otp, email], (err, result) => {
             if (err) return res.status(500).json({ message: 'Database error', err });
 
-            res.status(200).json({ message: 'Password updated successfully' });
+            // Send OTP via email
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Password Reset OTP',
+                text: `Your OTP is: ${otp}`,
+            };
+
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) return res.status(500).json({ message: 'Email sending failed', error });
+                res.status(200).json({ message: 'OTP sent to email', success: true, status: 200 ,email});
+            });
         });
     });
 };
+
+
+const verifyOTP = (req, res) => {
+    const { email, otp } = req.body;
+    const sql = 'SELECT otp_token, otp FROM users WHERE email = ?';
+
+    db.query(sql, [email], (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error', err });
+        if (results.length === 0) return res.status(400).json({ message: 'Invalid email' });
+
+        const { otp_token, otp: storedOtp } = results[0];
+
+        // Verify the token
+        jwt.verify(otp_token, OTP_SECRET, (err, decoded) => {
+            if (err || decoded.otp !== otp || storedOtp !== otp) {
+                return res.status(400).json({ message: 'Invalid or expired OTP' });
+            }
+
+            // Respond with success and any additional data
+            res.status(200).json({
+                data: { email: email },
+                
+                success: true,
+                status: 200,
+            });
+        });
+    });
+};
+
+
+
+
+
+
+
+const addNewPassword = (req, res) => {
+    const { new_password, confirm_new_password, email } = req.body;
+
+    console.log('Received request to change password:', req.body); // Debug log
+
+    if (new_password !== confirm_new_password) {
+        console.error('Passwords do not match');
+        return res.status(400).json({ message: 'Passwords do not match' });
+    }
+
+    const sqlSelect = 'SELECT email FROM users WHERE email = ?';
+
+    db.query(sqlSelect, [email], (err, results) => {
+        if (err) {
+            console.error('Database select error:', err);
+            return res.status(500).json({ message: 'Database error', err });
+        }
+
+        if (results.length === 0) {
+            console.error('Invalid email:', email);
+            return res.status(400).json({ message: 'Invalid email' });
+        }
+
+        bcrypt.hash(new_password, 10, (err, hash) => {
+            if (err) {
+                console.error('Error hashing password:', err);
+                return res.status(500).json({ message: 'Error hashing password', err });
+            }
+
+            const sqlUpdate = 'UPDATE users SET password = ?, otp_token = NULL, otp = NULL WHERE email = ?';
+
+            db.query(sqlUpdate, [hash, email], (err, results) => {
+                if (err) {
+                    console.error('Database update error:', err);
+                    return res.status(500).json({ message: 'Database error', err });
+                }
+
+                console.log('Password updated successfully for email:', email); // Debug log
+                res.status(200).json({ message: 'Password updated successfully', success: true, status: 200 });
+            });
+        });
+    });
+};
+
+
+
 
 const changePassword = (req, res) => {
     const { email, oldPassword, newPassword } = req.body;
@@ -206,7 +272,11 @@ const changePassword = (req, res) => {
                 db.query('UPDATE users SET password = ? WHERE email = ?', [hash, email], (err) => {
                     if (err) return res.status(500).json({ message: 'Database error', err });
 
-                    res.status(200).json({ message: 'Password updated successfully' });
+                    res.status(200).json({
+                        message: 'Password updated successfully',
+                        success: true,
+                        status: 200,
+                    });
                 });
             });
         });
@@ -223,11 +293,13 @@ const resetPassword = (req, res) => {
         db.query(sql, [hash, email], (err, results) => {
             if (err) return res.status(500).json({ message: 'Database error', err });
 
-            res.status(200).json({ message: 'Password reset successfully' });
+            res.status(200).json({
+                message: 'Password reset successfully',
+                success: true,
+                status: 200,
+            });
         });
     });
 };
 
 module.exports = { Signup, Login, Logout, RefreshToken, verifyToken, sendForgotPasswordEmail, verifyOTP, addNewPassword, changePassword, resetPassword };
-
-// module.exports = { Signup, Login, Logout, RefreshToken, verifyToken };
