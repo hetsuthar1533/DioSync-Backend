@@ -6,7 +6,6 @@ const cors = require('cors');
 const nodemailer = require('nodemailer');
 const OTP_SECRET = 'otp_secret234'; // Separate secret key for OTP
 const app = express()
-
 const SECRET_KEY = 'hiiiiamhet';
 const REFRESH_SECRET_KEY = 'hiiiiamhet2';
 app.use(cors({
@@ -20,73 +19,102 @@ const generateTokens = (user) => {
     const refreshToken = jwt.sign({ id: user.user_id }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
     return { accessToken, refreshToken };
 };
-
 // Signup function
-const Signup = async (req, res) => { 
-    const { username, email, password } = req.body;
-  
-    if (!username || !email || !password) {
-      console.error('Missing required fields:', req.body);
-      return res.status(400).json({ message: 'Please provide all required fields' });
+const Signup = async (req, res) => {
+    const { username, email, password, user_type } = req.body;
+
+    if (!username || !email || !password || !user_type) {
+        console.error('Missing required fields:', req.body);
+        return res.status(400).json({ message: 'Please provide all required fields' });
     }
-  
+
     const checkUserQuery = 'SELECT * FROM users WHERE email = ?';
-  
+
     db.query(checkUserQuery, [email], (err, results) => {
-      if (err) {
-        console.error('Database error:', err);
-        return res.status(500).json({ message: 'Database error', err });
-      }
-      if (results.length > 0) {
-        console.log('User already exists with email:', email);
-        return res.status(400).json({ message: 'User already exists' });
-      }
-  
-      bcrypt.hash(password, 10, (err, hash) => {
         if (err) {
-          console.error('Error hashing password:', err);
-          return res.status(500).json({ message: 'Error hashing password', err });
-        }
-  
-        const insertUserQuery = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
-  
-        db.query(insertUserQuery, [username, email, hash], (err, results) => {
-          if (err) {
             console.error('Database error:', err);
             return res.status(500).json({ message: 'Database error', err });
-          }
-  
-          const { accessToken, refreshToken } = generateTokens({ user_id: results.insertId });
-          console.log('User registered successfully:', { user_id: results.insertId, accessToken, refreshToken });
-          return res.status(201).json({ accessToken, refreshToken });
-        });
-      });
-    });
-  };
-// Login function
-const Login = async (req, res) => {
-    const { email, password } = req.body;
-    const sql = 'SELECT * FROM users WHERE email = ?';
-    console.log(email);
+        }
+        if (results.length > 0) {
+            console.log('User already exists with email:', email);
+            return res.status(400).json({ message: 'User already exists' });
+        }
 
-    db.query(sql, [email], (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error', err });
-        if (results.length === 0) return res.status(400).json({ message: 'Invalid credentials' });
+        bcrypt.hash(password, 10, (err, hash) => {
+            if (err) {
+                console.error('Error hashing password:', err);
+                return res.status(500).json({ message: 'Error hashing password', err });
+            }
 
-        const user = results[0];
+            const insertUserQuery = 'INSERT INTO users (username, email, password, user_type) VALUES (?, ?, ?, ?)';
 
-        bcrypt.compare(password, user.password, (err, isMatch) => {
-            if (err) return res.status(500).json({ message: 'Error comparing passwords', err });
-            if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+            db.query(insertUserQuery, [username, email, hash, user_type], (err, results) => {
+                if (err) {
+                    console.error('Database error:', err);
+                    return res.status(500).json({ message: 'Database error', err });
+                }
 
-            const { accessToken, refreshToken } = generateTokens(user);
-
-            db.query('UPDATE users SET refresh_token = ? WHERE user_id = ?', [refreshToken, user.user_id], (err) => {
-                if (err) return res.status(500).json({ message: 'Database error', err });
-                res.status(200).json({ accessToken, refreshToken, user_type: 'admin', is_temp_pwd_changed: true });
+                const { accessToken, refreshToken } = generateTokens({ user_id: results.insertId });
+                console.log('User registered successfully:', { user_id: results.insertId, accessToken, refreshToken });
+                return res.status(201).json({ accessToken, refreshToken });
             });
         });
     });
+};
+
+
+// Login function
+const Login = async (req, res) => {
+    const { email, password } = req.body;
+     console.log(req.body);
+     
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Please provide email and password' });
+    }
+
+    const checkUserQuery = 'SELECT * FROM users WHERE email = ?';
+
+    db.query(checkUserQuery, [email], async (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ message: 'Database error', err });
+        }
+
+        if (results.length === 0) {
+            return res.status(400).json({ message: 'User not found' });
+        }
+
+        const user = results[0];
+        console.log(results);
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(400).json({ message: 'Invalid password' });
+        }
+
+        const { accessToken, refreshToken } = generateTokens({ user_id: user.id });
+        console.log({
+            accessToken,
+            refreshToken,
+            user_type: user.user_type,
+            is_temp_pwd_changed: true,
+        });
+
+        return res.status(200).json({
+            accessToken,
+            refreshToken,
+            user_type: user.user_type,
+            is_temp_pwd_changed: true, // Include user type in the response
+        });
+    });
+};
+
+const getUserTypes = (req, res) => {
+    const userTypes = [
+        // { id: 1, type: 'admin' },
+        { id: 2, type: 'owner' },
+        { id: 3, type: 'manager' },];
+    res.json(userTypes);
+    console.log(userTypes);
 };
 
 // Middleware to verify token
@@ -102,7 +130,6 @@ const verifyToken = (req, res, next) => {
     });
 };
 let blacklist = [];
- 
 // Logout function
 const Logout = (req, res) => {
     console.log("hi this is logout");
@@ -138,10 +165,6 @@ const RefreshToken = (req, res) => {
         });
     });
 };
-
-
-
-
 // SMTP configuration for nodemailer
 const transporter = nodemailer.createTransport({
     service: 'Gmail',
@@ -150,11 +173,6 @@ const transporter = nodemailer.createTransport({
         pass: 'jbjw ownf kprg nzrg',
     },
 });
-
-
-
-// SMTP configuration for nodemailer
-
 
 const sendForgotPasswordEmail = (req, res) => {
     const { email } = req.body;
@@ -191,7 +209,6 @@ const sendForgotPasswordEmail = (req, res) => {
     });
 };
 
-
 const verifyOTP = (req, res) => {
     const { email, otp } = req.body;
     const sql = 'SELECT otp_token, otp FROM users WHERE email = ?';
@@ -218,12 +235,6 @@ const verifyOTP = (req, res) => {
         });
     });
 };
-
-
-
-
-
-
 
 const addNewPassword = (req, res) => {
     const { new_password, confirm_new_password, email } = req.body;
@@ -268,9 +279,6 @@ const addNewPassword = (req, res) => {
         });
     });
 };
-
-
-
 
 const changePassword = (req, res) => {
     const { email, oldPassword, newPassword } = req.body;
@@ -322,4 +330,4 @@ const resetPassword = (req, res) => {
     });
 };
 
-module.exports = { Signup, Login, Logout, RefreshToken, verifyToken, sendForgotPasswordEmail, verifyOTP, addNewPassword, changePassword, resetPassword };
+module.exports = { Signup, Login, Logout, RefreshToken, verifyToken, sendForgotPasswordEmail, verifyOTP, addNewPassword, changePassword, resetPassword, getUserTypes };

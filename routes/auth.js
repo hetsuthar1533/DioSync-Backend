@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { Signup, Login, Logout, RefreshToken, verifyToken, sendForgotPasswordEmail, verifyOTP, addNewPassword, changePassword, resetPassword } = require('../controllers/Authcontrollers');
+const { Signup, Login, Logout, RefreshToken, verifyToken, sendForgotPasswordEmail, verifyOTP, addNewPassword, changePassword, resetPassword,getUserTypes } = require('../controllers/Authcontrollers');
 
 // Existing routes
 router.post('/signup', Signup);
 router.post('/login', Login);
+router.post('/user-types', getUserTypes);
+
 router.post('/logout', verifyToken, Logout);
 router.post('/token/refresh', RefreshToken);
 
