@@ -22,27 +22,47 @@ const generateTokens = (user) => {
 };
 
 // Signup function
-const Signup = async (req, res) => {
+const Signup = async (req, res) => { 
     const { username, email, password } = req.body;
-    const sql = 'SELECT * FROM users WHERE email = ?';
-
-    db.query(sql, [email], (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error', err });
-        if (results.length > 0) return res.status(400).json({ message: 'User already exists' });
-
-        bcrypt.hash(password, 10, (err, hash) => {
-            if (err) return res.status(500).json({ message: 'Error hashing password', err });
-
-            db.query('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', [username, email, hash], (err, results) => {
-                if (err) return res.status(500).json({ message: 'Database error', err });
-
-                const { accessToken, refreshToken } = generateTokens({ user_id: results.insertId });
-                res.status(201).json({ accessToken, refreshToken });
-            });
+  
+    if (!username || !email || !password) {
+      console.error('Missing required fields:', req.body);
+      return res.status(400).json({ message: 'Please provide all required fields' });
+    }
+  
+    const checkUserQuery = 'SELECT * FROM users WHERE email = ?';
+  
+    db.query(checkUserQuery, [email], (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ message: 'Database error', err });
+      }
+      if (results.length > 0) {
+        console.log('User already exists with email:', email);
+        return res.status(400).json({ message: 'User already exists' });
+      }
+  
+      bcrypt.hash(password, 10, (err, hash) => {
+        if (err) {
+          console.error('Error hashing password:', err);
+          return res.status(500).json({ message: 'Error hashing password', err });
+        }
+  
+        const insertUserQuery = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
+  
+        db.query(insertUserQuery, [username, email, hash], (err, results) => {
+          if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ message: 'Database error', err });
+          }
+  
+          const { accessToken, refreshToken } = generateTokens({ user_id: results.insertId });
+          console.log('User registered successfully:', { user_id: results.insertId, accessToken, refreshToken });
+          return res.status(201).json({ accessToken, refreshToken });
         });
+      });
     });
-};
-
+  };
 // Login function
 const Login = async (req, res) => {
     const { email, password } = req.body;
@@ -82,7 +102,7 @@ const verifyToken = (req, res, next) => {
     });
 };
 let blacklist = [];
-
+ 
 // Logout function
 const Logout = (req, res) => {
     console.log("hi this is logout");
@@ -165,7 +185,7 @@ const sendForgotPasswordEmail = (req, res) => {
 
             transporter.sendMail(mailOptions, (error, info) => {
                 if (error) return res.status(500).json({ message: 'Email sending failed', error });
-                res.status(200).json({ message: 'OTP sent to email', success: true, status: 200 ,email});
+                res.status(200).json({ message: 'OTP sent to email', success: true, status: 200, email });
             });
         });
     });
@@ -191,7 +211,7 @@ const verifyOTP = (req, res) => {
             // Respond with success and any additional data
             res.status(200).json({
                 data: { email: email },
-                
+
                 success: true,
                 status: 200,
             });
