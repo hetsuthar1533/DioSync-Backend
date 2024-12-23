@@ -7,8 +7,8 @@ const nodemailer = require('nodemailer');
 const OTP_SECRET = 'otp_secret234'; // Separate secret key for OTP
 const app = express()
 
-const SECRET_KEY = 'your_jwt_secret';
-const REFRESH_SECRET_KEY = 'i_am_refresh';
+const SECRET_KEY = 'hiiiiamhet';
+const REFRESH_SECRET_KEY = 'hiiiiamhet2';
 app.use(cors({
     origin: 'http://localhost:3000',
     methods: ['GET', 'POST'],
